@@ -12,6 +12,10 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif()
 
+#set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wall -Werror -g")
+
 #############################################################
 # http://answers.ros.org/question/230877/optionally-build-a-package-with-catkin/
 if( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
@@ -86,6 +90,7 @@ set(APP_CPPS
     ./bt_editor/sidepanel_editor.cpp
     ./bt_editor/sidepanel_replay.cpp
     ./bt_editor/custom_node_dialog.cpp
+    ./bt_editor/custom_datatype_dialog.cpp
 
     ./bt_editor/XML_utilities.cpp
     )
@@ -104,6 +109,7 @@ set(FORMS_UI
   ./bt_editor/sidepanel_replay.ui
   ./bt_editor/startup_dialog.ui
   ./bt_editor/custom_node_dialog.ui
+  ./bt_editor/custom_datatype_dialog.ui
   )
 
 find_package(ZMQ)

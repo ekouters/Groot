@@ -11,6 +11,7 @@
 
 
 NodeModels ReadTreeNodesModel(const QDomElement& root);
+DataTypes ReadDataTypes(const QDomElement& root);
 
 void RecursivelyCreateXml(const QtNodes::FlowScene &scene,
                           QDomDocument& doc,

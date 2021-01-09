@@ -15,10 +15,11 @@ const int DEFAULT_LINE_WIDTH  = 100;
 const int DEFAULT_FIELD_WIDTH = 50;
 const int DEFAULT_LABEL_WIDTH = 50;
 
-BehaviorTreeDataModel::BehaviorTreeDataModel(const NodeModel &model):
+BehaviorTreeDataModel::BehaviorTreeDataModel(const NodeModel &model, const DataTypes& datatypes):
     _params_widget(nullptr),
     _uid( GetUID() ),
     _model(model),
+    _datatypes(datatypes),
     _icon_renderer(nullptr),
     _style_caption_color( QtNodes::NodeStyle().FontColor ),
     _style_caption_alias( model.registration_ID )
@@ -116,19 +117,36 @@ BehaviorTreeDataModel::BehaviorTreeDataModel(const NodeModel &model):
                 }
             }
 
-            GrootLineEdit* form_field = new GrootLineEdit();
-            form_field->setAlignment( Qt::AlignHCenter);
-            form_field->setMaximumWidth(140);
-            form_field->setText( port_it.second.default_value );
+            QWidget* form_field;
+            if (port_it.second.type_name == "string")
+            {
+                form_field = new GrootLineEdit();
+                GrootLineEdit *form_field_lineedit = dynamic_cast<GrootLineEdit *>(form_field);
+                form_field_lineedit->setAlignment( Qt::AlignHCenter);
+                form_field_lineedit->setMaximumWidth(140);
+                form_field_lineedit->setText( port_it.second.default_value );
 
-            connect(form_field, &GrootLineEdit::doubleClicked,
-                    this, [this,form_field]()
-                    { emit this->portValueDoubleChicked(form_field); });
+                connect(form_field_lineedit, &GrootLineEdit::doubleClicked,
+                        this, [this,form_field_lineedit]()
+                        { emit this->portValueDoubleChicked(form_field_lineedit); });
 
-            connect(form_field, &GrootLineEdit::lostFocus,
-                    this, [this]()
-                    { emit this->portValueDoubleChicked(nullptr); });
+                connect(form_field_lineedit, &GrootLineEdit::lostFocus,
+                        this, [this]()
+                        { emit this->portValueDoubleChicked(nullptr); });
+            }
+            else
+            {
+                form_field = new QComboBox();
+                QComboBox *form_field_combo = dynamic_cast<QComboBox *>(form_field);
 
+                for (const auto &datatype_value_it : _datatypes.at(port_it.second.type_name))
+                {
+                    form_field_combo->addItem(datatype_value_it);
+                }
+                
+                form_field_combo->setCurrentText(port_it.second.default_value);
+            }
+            
             QLabel* form_label  =  new QLabel( label, _params_widget );
             form_label->setStyleSheet("QToolTip {color: black;}");
             form_label->setToolTip( description );

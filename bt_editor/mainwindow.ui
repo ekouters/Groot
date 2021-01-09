@@ -766,6 +766,7 @@ QToolButton:disabled{
      <addaction name="actionReplay_mode"/>
     </widget>
     <addaction name="menuSwitch_To"/>
+    <addaction name="actionCustomDataTypes"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -835,6 +836,11 @@ QToolButton:disabled{
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionCustomDataTypes">
+   <property name="text">
+    <string>Custom Data Types</string>
    </property>
   </action>
  </widget>

@@ -27,7 +27,7 @@ class BehaviorTreeDataModel : public NodeDataModel
     Q_OBJECT
 
 public:
-    BehaviorTreeDataModel(const NodeModel &model );
+    BehaviorTreeDataModel(const NodeModel &model, const DataTypes& datatypes);
 
     ~BehaviorTreeDataModel() override;
 
@@ -102,6 +102,7 @@ protected:
 
 private:
     const NodeModel _model;
+    const DataTypes _datatypes;
     QString _instance_name;
     QSvgRenderer* _icon_renderer;
 

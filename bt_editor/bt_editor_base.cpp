@@ -205,6 +205,13 @@ const NodeModels &BuiltinNodeModels()
             const auto& bt_model = it.second;
             NodeModel groot_model;
             groot_model = bt_model;
+
+            // set default type_name for all Ports to "string"
+            for (auto& port: groot_model.ports)
+            {
+                port.second.type_name = "string";
+            }
+
             out.insert( { QString::fromStdString(model_name), std::move(groot_model) });
         }
         return out;
@@ -215,9 +222,9 @@ const NodeModels &BuiltinNodeModels()
 
 PortModel &PortModel::operator =(const BT::PortInfo &src)
 {
-    this->direction = src.direction();
-    this->description = QString::fromStdString(src.description());
     this->type_name = QString::fromStdString(BT::demangle(src.type()));
+    this->direction = src.direction();
     this->default_value = QString::fromStdString( src.defaultValue());
+    this->description = QString::fromStdString(src.description());
     return *this;
 }

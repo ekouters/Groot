@@ -122,6 +122,8 @@ public slots:
 
     void onTabSetMainTree(int tab_index);
 
+    void on_actionCustomDataTypes_triggered();
+
 signals:
     void updateGraphic();
 
@@ -185,6 +187,7 @@ private:
     QtNodes::PortLayout _current_layout;
 
     NodeModels _treenode_models;
+    DataTypes _datatypes;
 
     QString _main_tree;
 

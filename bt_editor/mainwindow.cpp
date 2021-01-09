@@ -33,6 +33,7 @@
 #include "utils.h"
 
 #include "ui_about_dialog.h"
+#include "custom_datatype_dialog.h"
 
 using QtNodes::DataModelRegistry;
 using QtNodes::FlowView;
@@ -65,7 +66,7 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
 
     //------------------------------------------------------
 
-    auto registerModel = [this](const QString& ID, const NodeModel& model)
+    auto registerModel = [this](const QString& ID, const NodeModel& model, const DataTypes& datatypes)
     {
         QString category = QString::fromStdString( BT::toStr(model.type) );
         if( ID == "Root")
@@ -73,9 +74,9 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
             category = "Root";
         }
         QtNodes::DataModelRegistry::RegistryItemCreator creator;
-        creator = [model]() -> QtNodes::DataModelRegistry::RegistryItemPtr
+        creator = [model, datatypes]() -> QtNodes::DataModelRegistry::RegistryItemPtr
         {
-            auto ptr = new BehaviorTreeDataModel( model );
+            auto ptr = new BehaviorTreeDataModel( model, datatypes );
             return std::unique_ptr<BehaviorTreeDataModel>(ptr);
         };
         _model_registry->registerModel( category, creator, ID );
@@ -83,13 +84,13 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
 
     for(const auto& model: BuiltinNodeModels())
     {
-        registerModel( model.first, model.second );
+        registerModel( model.first, model.second, _datatypes );
         _treenode_models.insert( { model.first, model.second } );
         qDebug() << "adding model: " << model.first;
     }
     //------------------------------------------------------
 
-    _editor_widget = new SidepanelEditor(_model_registry.get(), _treenode_models, this);
+    _editor_widget = new SidepanelEditor(_model_registry.get(), _treenode_models, _datatypes, this);
     _replay_widget = new SidepanelReplay(this);
 
     ui->leftFrame->layout()->addWidget( _editor_widget );
@@ -318,6 +319,8 @@ void MainWindow::loadFromXML(const QString& xml_text)
             _main_tree = document_root.attribute("main_tree_to_execute");
         }
 
+        _datatypes = ReadDataTypes( document_root );
+
         auto custom_models = ReadTreeNodesModel( document_root );
 
         for( const auto& model: custom_models)
@@ -502,6 +505,31 @@ QString MainWindow::saveToXML() const
         root_models.appendChild(node);
     }
     root.appendChild(root_models);
+    root.appendChild( doc.createComment(COMMENT_SEPARATOR) );
+
+
+    
+    QDomElement root_datatypes = doc.createElement("DataTypes");
+
+    for (const auto& datatype_it: _datatypes)
+    {
+        const auto& datatype_name = datatype_it.first;  // QString
+        const auto& datatype_values = datatype_it.second; // QStringList
+
+        QDomElement xml_datatype = doc.createElement( "DataType" );
+        xml_datatype.setAttribute("name", datatype_name);
+
+        for (const auto& datatype_value: datatype_values)
+        {
+            QDomElement xml_datatype_value = doc.createElement( "Value" );
+            xml_datatype_value.setAttribute("name", datatype_value);
+            
+            xml_datatype.appendChild(xml_datatype_value);
+        }
+
+        root_datatypes.appendChild(xml_datatype);
+    }
+    root.appendChild(root_datatypes);
     root.appendChild( doc.createComment(COMMENT_SEPARATOR) );
 
     return xmlDocumentToString(doc);
@@ -892,13 +920,15 @@ void MainWindow::onAddToModelRegistry(const NodeModel &model)
     namespace util = QtNodes::detail;
     const auto& ID = model.registration_ID;
 
-    DataModelRegistry::RegistryItemCreator node_creator = [model]() -> DataModelRegistry::RegistryItemPtr
+    const DataTypes& datatypes = _datatypes;
+
+    DataModelRegistry::RegistryItemCreator node_creator = [model, datatypes]() -> DataModelRegistry::RegistryItemPtr
     {
         if( model.type == NodeType::SUBTREE)
         {
-            return util::make_unique<SubtreeNodeModel>(model);
+            return util::make_unique<SubtreeNodeModel>(model, datatypes);
         }
-        return util::make_unique<BehaviorTreeDataModel>(model);
+        return util::make_unique<BehaviorTreeDataModel>(model, datatypes);
     };
 
     _model_registry->registerModel( QString::fromStdString( toStr(model.type)), node_creator, ID);
@@ -1669,6 +1699,16 @@ void MainWindow::clearTreeModels()
 const NodeModels &MainWindow::registeredModels() const
 {
     return _treenode_models;
+}
+
+void MainWindow::on_actionCustomDataTypes_triggered()
+{
+    CustomDataTypeDialog dialog(_datatypes, this);
+
+    if( dialog.exec() == QDialog::Accepted)
+    {
+        _datatypes = dialog.getDataTypes();
+    }
 }
 
 void MainWindow::on_actionAbout_triggered()

@@ -8,11 +8,13 @@
 #include <QModelIndexList>
 
 CustomNodeDialog::CustomNodeDialog(const NodeModels &models,
+                                   const DataTypes &datatypes,
                                    QString to_edit,
                                    QWidget *parent):
     QDialog(parent),
     ui(new Ui::CustomNodeDialog),
     _models(models),
+    _datatypes(datatypes),
     _editing(false)
 {
     ui->setupUi(this);
@@ -20,8 +22,9 @@ CustomNodeDialog::CustomNodeDialog(const NodeModels &models,
 
     ui->tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
     ui->tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-    ui->tableWidget->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Interactive);
-    ui->tableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch);
+    ui->tableWidget->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    ui->tableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Interactive);
+    ui->tableWidget->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Stretch);
 
     QSettings settings;
     restoreGeometry(settings.value("CustomNodeDialog/geometry").toByteArray());
@@ -57,8 +60,40 @@ CustomNodeDialog::CustomNodeDialog(const NodeModels &models,
                 }
 
                 ui->tableWidget->setCellWidget(row,1, combo_direction );
-                ui->tableWidget->setItem(row,2, new QTableWidgetItem(port_it.second.default_value) );
-                ui->tableWidget->setItem(row,3, new QTableWidgetItem(port_it.second.description) );
+
+                // Populate DataTypes column
+                QComboBox* combo_datatype = new QComboBox;
+                combo_datatype->addItem("string");
+                for (const auto &datatype_it: _datatypes)
+                {
+                    combo_datatype->addItem(datatype_it.first);
+                }
+                ui->tableWidget->setCellWidget(row,2, combo_datatype );
+                ui->tableWidget->resizeColumnToContents(2);
+
+                combo_datatype->setItemData(0, row, Qt::UserRole + 1);
+                combo_datatype->setItemData(0, 2, Qt::UserRole + 2);
+                connect(combo_datatype, &QComboBox::currentTextChanged,
+                        this, &CustomNodeDialog::dataTypeTextChanged);
+
+                // Set DataType to correct value
+                combo_datatype->setCurrentText(port_it.second.type_name);
+
+                // If default_value column is now a combobox, set it.
+                // Otherwise, just set the text
+                auto combo_default = static_cast<QComboBox *>(ui->tableWidget->cellWidget(row, 3));
+                if (combo_default)
+                {
+                    combo_default->setCurrentText(port_it.second.default_value);
+                }
+                else
+                {
+                    ui->tableWidget->setItem(row,3, new QTableWidgetItem(port_it.second.default_value) );
+                }
+
+
+                ui->tableWidget->setItem(row,4, new QTableWidgetItem(port_it.second.description) );
+
             }
 
             if( model.type == NodeType::ACTION )
@@ -96,6 +131,7 @@ CustomNodeDialog::CustomNodeDialog(const NodeModels &models,
 
 CustomNodeDialog::~CustomNodeDialog()
 {
+    delete _validator;
     delete ui;
 }
 
@@ -119,14 +155,30 @@ NodeModel CustomNodeDialog::getTreeNodeModel() const
         PortModel port_model;
         const QString key       = ui->tableWidget->item(row,0)->text();
 
+        // Get direction
         auto combo = static_cast<QComboBox*>(ui->tableWidget->cellWidget(row,1));
 
         const QString direction = (combo) ? combo->currentText() :
                                             ui->tableWidget->item(row,1)->text();
 
         port_model.direction = BT::convertFromString<PortDirection>(direction.toStdString());
-        port_model.default_value =  ui->tableWidget->item(row,2)->text();
-        port_model.description   =  ui->tableWidget->item(row,3)->text();
+
+
+        // Get type_name
+        auto combo_type = static_cast<QComboBox*>(ui->tableWidget->cellWidget(row,2));
+
+        port_model.type_name = (combo_type) ? combo_type->currentText() :
+                                              ui->tableWidget->item(row,2)->text();
+
+
+        // Get default_value
+        auto combo_default = static_cast<QComboBox*>(ui->tableWidget->cellWidget(row,3));
+
+        port_model.default_value = (combo_default) ? combo_default->currentText() :
+                                                     ui->tableWidget->item(row,3)->text();
+
+
+        port_model.description   =  ui->tableWidget->item(row,4)->text();
         ports.insert( {key, port_model} );
     }
     return { type, ID, ports };
@@ -172,7 +224,7 @@ void CustomNodeDialog::checkValid()
             {
                 invalid_param_name = true;
             }
-            else if( param_name == "ID" || param_name == "name" )
+            else if( param_name == "ID" || param_name == "name" || param_name == "datatype" )
             {
                 reselved_param_name = true;
             }
@@ -190,7 +242,7 @@ void CustomNodeDialog::checkValid()
         }
         else if( reselved_param_name )
         {
-            ui->labelWarning->setText("Reserved port key: the words \"name\" and \"ID\" should not be used.");
+            ui->labelWarning->setText("Reserved port key: the words \"name\", \"ID\" and \"datatype\" should not be used.");
         }
         else if( param_names.size() < ui->tableWidget->rowCount() )
         {
@@ -245,8 +297,24 @@ void CustomNodeDialog::on_pushButtonAdd_pressed()
     combo_direction->addItem("In/Out");
 
     ui->tableWidget->setCellWidget(row, 1, combo_direction);
-    ui->tableWidget->setItem(row,2, new QTableWidgetItem());
+
+    // Populate DataTypes column
+    QComboBox *combo_datatype = new QComboBox;
+    combo_datatype->addItem("string");
+    for (const auto &datatype_it : _datatypes)
+    {
+        combo_datatype->addItem(datatype_it.first);
+    }
+    ui->tableWidget->setCellWidget(row, 2, combo_datatype);
+    ui->tableWidget->resizeColumnToContents(2);
+
+    combo_datatype->setItemData(0, row, Qt::UserRole + 1);
+    combo_datatype->setItemData(0, 2, Qt::UserRole + 2);
+    connect( combo_datatype, &QComboBox::currentTextChanged,
+             this, &CustomNodeDialog::dataTypeTextChanged );
+
     ui->tableWidget->setItem(row,3, new QTableWidgetItem());
+    ui->tableWidget->setItem(row,4, new QTableWidgetItem());
 
     checkValid();
 }
@@ -277,6 +345,9 @@ void CustomNodeDialog::on_comboBox_currentIndexChanged(const QString &node_type)
             auto direction_item = new QTableWidgetItem ("Input");
             direction_item->setFlags(direction_item->flags() & ~Qt::ItemIsEditable );
 
+            auto datatype_item = new QTableWidgetItem ("string");
+            datatype_item->setFlags(datatype_item->flags() & ~Qt::ItemIsEditable );
+
             auto value_item = new QTableWidgetItem ("false");
 
             auto description_item = new QTableWidgetItem ("If false (default), the Subtree has an isolated blackboard and needs port remapping");
@@ -284,8 +355,9 @@ void CustomNodeDialog::on_comboBox_currentIndexChanged(const QString &node_type)
 
             ui->tableWidget->setItem(row, 0, key_item);
             ui->tableWidget->setItem(row, 1, direction_item);
-            ui->tableWidget->setItem(row, 2, value_item);
-            ui->tableWidget->setItem(row, 3, description_item);
+            ui->tableWidget->setItem(row, 2, datatype_item);
+            ui->tableWidget->setItem(row, 3, value_item);
+            ui->tableWidget->setItem(row, 4, description_item);
         }
     }
     else
@@ -296,4 +368,36 @@ void CustomNodeDialog::on_comboBox_currentIndexChanged(const QString &node_type)
         }
     }
     checkValid();
+}
+
+void CustomNodeDialog::dataTypeTextChanged(const QString &new_datatype)
+{
+    QComboBox *comboBox = dynamic_cast<QComboBox *>(sender());
+
+    if (comboBox)
+    {
+        int row = comboBox->itemData(0, Qt::UserRole + 1).toInt();
+        int col = comboBox->itemData(0, Qt::UserRole + 2).toInt();
+
+        if (new_datatype == "string")
+        {
+            // Switch back to string
+            ui->tableWidget->removeCellWidget(row, (col+1));
+            ui->tableWidget->setItem(row, (col+1), new QTableWidgetItem());
+        }
+        else
+        {
+            // Build combobox with DataType values
+            QComboBox* combo_datatype_values = new QComboBox;
+
+            for (const auto& datatype_value_it: _datatypes.at(new_datatype))
+            {
+                combo_datatype_values->addItem(datatype_value_it);
+            }
+
+            ui->tableWidget->setCellWidget(row, (col+1), combo_datatype_values);
+        }
+
+        ui->tableWidget->resizeColumnToContents((col+1));
+    }
 }

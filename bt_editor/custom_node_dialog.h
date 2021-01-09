@@ -15,7 +15,7 @@ class CustomNodeDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit CustomNodeDialog(const NodeModels& models, QString to_edit = QString(), QWidget *parent = nullptr);
+    explicit CustomNodeDialog(const NodeModels& models, const DataTypes &datatypes, QString to_edit = QString(), QWidget *parent = nullptr);
 
     ~CustomNodeDialog() override;
 
@@ -36,9 +36,12 @@ private slots:
 
     void on_comboBox_currentIndexChanged(const QString &node_type);
 
+    void dataTypeTextChanged(const QString &datatype_name);
+
   private:
     Ui::CustomNodeDialog *ui;
     const NodeModels &_models;
+    const DataTypes &_datatypes;
     QValidator *_validator;
     bool _editing;
 };

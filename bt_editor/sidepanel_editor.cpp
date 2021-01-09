@@ -16,10 +16,12 @@
 
 SidepanelEditor::SidepanelEditor(QtNodes::DataModelRegistry *registry,
                                  NodeModels &tree_nodes_model,
+                                 DataTypes &datatypes,
                                  QWidget *parent) :
     QFrame(parent),
     ui(new Ui::SidepanelEditor),
     _tree_nodes_model(tree_nodes_model),
+    _datatypes(datatypes),
     _model_registry(registry)
 {
     ui->setupUi(this);   
@@ -147,7 +149,7 @@ void SidepanelEditor::on_lineEditFilter_textChanged(const QString &text)
 
 void SidepanelEditor::on_buttonAddNode_clicked()
 {
-    CustomNodeDialog dialog(_tree_nodes_model, QString(), this);
+    CustomNodeDialog dialog(_tree_nodes_model, _datatypes, QString(), this);
     if( dialog.exec() == QDialog::Accepted)
     {
         auto new_model = dialog.getTreeNodeModel();
@@ -205,7 +207,7 @@ void SidepanelEditor::onContextMenu(const QPoint& pos)
     QAction* edit   = menu.addAction("Edit");
     connect( edit, &QAction::triggered, this, [this, selected_name]()
             {
-                CustomNodeDialog dialog(_tree_nodes_model, selected_name, this);
+                CustomNodeDialog dialog(_tree_nodes_model, _datatypes, selected_name, this);
                 if( dialog.exec() == QDialog::Accepted)
                 {
                     onReplaceModel( selected_name, dialog.getTreeNodeModel() );
@@ -274,6 +276,31 @@ void SidepanelEditor::on_buttonUpload_clicked()
     }
     root.appendChild(root_models);
 
+
+
+    QDomElement root_datatypes = doc.createElement("DataTypes");
+
+    for (const auto& datatype_it: _datatypes)
+    {
+        const auto& datatype_name = datatype_it.first;  // QString
+        const auto& datatype_values = datatype_it.second; // QStringList
+
+        QDomElement xml_datatype = doc.createElement( "DataType" );
+        xml_datatype.setAttribute("name", datatype_name);
+
+        for (const auto& datatype_value: datatype_values)
+        {
+            QDomElement xml_datatype_value = doc.createElement( "Value" );
+            xml_datatype_value.setAttribute("name", datatype_value);
+            
+            xml_datatype.appendChild(xml_datatype_value);
+        }
+
+        root_datatypes.appendChild(xml_datatype);
+    }
+    root.appendChild(root_datatypes);
+
+
     //-------------------------------------
     QSettings settings;
     QString directory_path  = settings.value("SidepanelEditor.lastSaveDirectory",
@@ -307,7 +334,7 @@ void SidepanelEditor::on_buttonDownload_clicked()
     QString directory_path  = settings.value("SidepanelEditor.lastLoadDirectory",
                                              QDir::homePath() ).toString();
 
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Load TreenNodeModel from file"),
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Load TreeNodeModel from file"),
                                                     directory_path,
                                                     tr("BehaviorTree (*.xml *.skills.json)" ));
     QFileInfo fileInfo(fileName);
@@ -328,10 +355,12 @@ void SidepanelEditor::on_buttonDownload_clicked()
 
     //--------------------------------
     NodeModels imported_models;
+    DataTypes imported_datatypes;
     if( fileInfo.suffix() == "xml" )
     {
         QFile file(fileName);
-        imported_models = importFromXML( &file );
+        imported_models = importModelsFromXML( &file );
+        imported_datatypes = importDataTypesFromXML( &file );
     }
     else if( fileInfo.completeSuffix() == "skills.json" )
     {
@@ -342,6 +371,9 @@ void SidepanelEditor::on_buttonDownload_clicked()
     {
         return;
     }
+
+    // Store imported datatypes
+    _datatypes = imported_datatypes;
 
     auto models_to_remove = GetModelsToRemove(this, _tree_nodes_model, imported_models );
 
@@ -356,7 +388,7 @@ void SidepanelEditor::on_buttonDownload_clicked()
     }
 }
 
-NodeModels SidepanelEditor::importFromXML(QFile* file)
+NodeModels SidepanelEditor::importModelsFromXML(QFile* file)
 {
     QDomDocument doc;
 
@@ -407,6 +439,82 @@ NodeModels SidepanelEditor::importFromXML(QFile* file)
     }
 
     return custom_models;
+}
+
+DataTypes SidepanelEditor::importDataTypesFromXML(QFile* file)
+{
+    QDomDocument doc;
+
+
+    if (!file->open(QIODevice::ReadOnly))
+    {
+        QMessageBox::warning(this,"Error loading TreeNodeModel from file",
+                             "The XML was not correctly loaded");
+        return {};
+    }
+
+    QString errorMsg;
+    int errorLine;
+    if( ! doc.setContent(file, &errorMsg, &errorLine ) )
+    {
+        auto error = tr("Error parsing XML (line %1): %2").arg(errorLine).arg(errorMsg);
+        QMessageBox::warning(this,"Error loading TreeNodeModel form file", error);
+        file->close();
+        return {};
+    }
+    file->close();
+
+    DataTypes custom_datatypes;
+
+    QDomElement xml_root = doc.documentElement();
+    if ( xml_root.isNull() || xml_root.tagName() != "root")
+    {
+        QMessageBox::warning(this,"Error loading TreeNodeModel form file",
+                             "The XML must have a root node called <root>");
+        return custom_datatypes;
+    }
+
+    auto manifest_root = xml_root.firstChildElement("DataTypes");
+
+    if ( manifest_root.isNull() )
+    {
+        QMessageBox::warning(this,"Error loading TreeNodeModel form file",
+                             "Expecting <DataTypes> under <root>");
+        return custom_datatypes;
+    }
+
+    /*
+    <DataTypes>
+        <DataType name="datatype_name">
+            <Value name="value1"/>
+            <Value name="value2"/>
+            <Value name="value3"/>
+        </DataType>
+        <DataType name="different_datatype">
+            <Value name="val1"/>
+            <Value name="val2"/>
+        </DataType>
+    </DataTypes>
+    */
+    for( QDomElement datatype_element = manifest_root.firstChildElement();
+         !datatype_element.isNull();
+         datatype_element = datatype_element.nextSiblingElement() )
+    {
+        auto datatype_name = QString(datatype_element.attribute("name"));
+        QStringList datatype_values;
+
+        // Iterate over values
+        for( QDomElement value_element = datatype_element.firstChildElement();
+             !value_element.isNull();
+             value_element = value_element.nextSiblingElement() )
+        {
+            datatype_values.append( value_element.attribute("name") );
+        }
+
+        custom_datatypes.insert( { datatype_name, datatype_values } );
+    }
+
+    return custom_datatypes;
 }
 
 NodeModels SidepanelEditor::importFromSkills(const QString &fileName)

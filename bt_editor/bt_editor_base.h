@@ -21,10 +21,10 @@ struct PortModel
 {
     PortModel(): direction(PortDirection::INOUT) {}
 
-    QString type_name;
     PortDirection direction;
-    QString description;
+    QString type_name;
     QString default_value;
+    QString description;
 
     PortModel& operator = (const BT::PortInfo& src);
 };
@@ -47,6 +47,8 @@ struct  NodeModel
 };
 
 typedef std::map<QString, NodeModel> NodeModels;
+
+typedef std::map<QString, QStringList> DataTypes;
 
 
 enum class GraphicMode { EDITOR, MONITOR, REPLAY };
