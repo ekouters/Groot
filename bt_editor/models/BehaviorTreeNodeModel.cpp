@@ -9,6 +9,7 @@
 #include <QFont>
 #include <QApplication>
 #include <QJsonDocument>
+#include <QAbstractItemView>
 
 const int MARGIN = 10;
 const int DEFAULT_LINE_WIDTH  = 100;
@@ -139,6 +140,9 @@ BehaviorTreeDataModel::BehaviorTreeDataModel(const NodeModel &model, const DataT
                 form_field = new QComboBox();
                 QComboBox *form_field_combo = dynamic_cast<QComboBox *>(form_field);
 
+                form_field_combo->view()->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+                form_field_combo->setMaxVisibleItems(10);
+
                 for (const auto &datatype_value_it : _datatypes.at(port_it.second.type_name))
                 {
                     form_field_combo->addItem(datatype_value_it);
@@ -155,7 +159,8 @@ BehaviorTreeDataModel::BehaviorTreeDataModel(const NodeModel &model, const DataT
 
             _ports_widgets.insert( std::make_pair( port_it.first, form_field) );
 
-            form_field->setStyleSheet("color: rgb(30,30,30); "
+            form_field->setStyleSheet("combobox-popup: 0; "
+                                      "color: rgb(30,30,30); "
                                       "background-color: rgb(200,200,200); "
                                       "border: 0px; ");
 
