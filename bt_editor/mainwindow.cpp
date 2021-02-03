@@ -127,6 +127,12 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
     QShortcut* redo_shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_Z), this);
     connect( redo_shortcut, &QShortcut::activated, this, &MainWindow::onRedoInvoked );
 
+    QShortcut *tabNext_shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_PageDown), this);
+    connect( tabNext_shortcut, &QShortcut::activated, this, &MainWindow::onTabNext );
+
+    QShortcut *tabPrevious_shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_PageUp), this);
+    connect( tabPrevious_shortcut, &QShortcut::activated, this, &MainWindow::onTabPrevious );
+
     connect( _editor_widget, &SidepanelEditor::nodeModelEdited,
             this, &MainWindow::onTreeNodeEdited);
 
@@ -829,6 +835,18 @@ void MainWindow::onRedoInvoked()
 
         // qDebug() << "R: Undo size: " << _undo_stack.size() << " Redo size: " << _redo_stack.size();
     }
+}
+
+void MainWindow::onTabNext()
+{
+    int idx = ui->tabWidget->currentIndex();
+    ui->tabWidget->setCurrentIndex(idx+1);
+}
+
+void MainWindow::onTabPrevious()
+{
+    int idx = ui->tabWidget->currentIndex();
+    ui->tabWidget->setCurrentIndex(idx-1);
 }
 
 void MainWindow::loadSavedStateFromJson(SavedState saved_state)

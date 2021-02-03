@@ -71,6 +71,10 @@ public slots:
 
     void onRedoInvoked();
 
+    void onTabNext();
+
+    void onTabPrevious();
+
     void onConnectionUpdate(bool connected);
 
     void onRequestSubTreeExpand(GraphicContainer& container,
