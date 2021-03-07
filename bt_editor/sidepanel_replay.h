@@ -54,6 +54,8 @@ signals:
 
     void addNewModel(const NodeModel &new_model);
 
+    void initializeDataTypes(const DataTypes& data_types);
+
 private:
 
     bool eventFilter(QObject *object, QEvent *event) override;

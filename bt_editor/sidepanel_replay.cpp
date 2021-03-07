@@ -215,6 +215,11 @@ void SidepanelReplay::loadLog(const QByteArray &content)
     auto fb_behavior_tree = Serialization::GetBehaviorTree( &buffer[4] );
 
 
+    // populate datatypes from data contained in the flatbuffers
+    auto datatypes = BuildDataTypesFromFlatbuffers( fb_behavior_tree );
+    emit initializeDataTypes( datatypes );
+
+
     auto res_pair = BuildTreeFromFlatbuffers( fb_behavior_tree );
 
     _loaded_tree  = res_pair.first;

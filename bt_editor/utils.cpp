@@ -385,6 +385,55 @@ AbsBehaviorTree BuildTreeFromXML(const QDomElement& bt_root, const NodeModels& m
 }
 
 
+DataTypes BuildDataTypesFromFlatbuffers(const Serialization::BehaviorTree *fb_behavior_tree)
+{
+    DataTypes datatypes;
+
+    for (const auto& node: *(fb_behavior_tree->nodes()) )
+    {
+        for (const auto& port_remap: *(node->port_remaps()) )
+        {
+            // Example:
+            // port_remap.port_name = "poi"
+            // port_remap.remap = "P_OWN_GOALLINE_CENTER"
+
+            // Find the data type name of the port 'poi'
+            QString port_type_name;
+            for (const auto& node_model: *(fb_behavior_tree->node_models()) )
+            {
+                for( const auto& port_model: *(node_model->ports()) )
+                {
+                    // Example:
+                    // port_model.port_name = "poi"
+                    // port_model.type_info = "Point2D"
+
+                    if (port_remap->port_name()->str() == port_model->port_name()->str())
+                    {
+                        // if not exists, add type_info --> datatypes
+                        // if not exists, add remap     --> datatypes.at(type_info)
+
+                        QString type_info = QString( port_model->type_info()->c_str() );
+                        QString remap = QString( port_remap->remap()->c_str() );
+
+                        if ( datatypes.find(type_info) == datatypes.end() )
+                        {
+                            datatypes.insert( std::make_pair( type_info, QStringList() ) );
+                        }
+
+                        if ( !datatypes.at(type_info).contains(remap) )
+                        {
+                            datatypes.at(type_info).append( remap );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return datatypes;
+}
+
+
 std::pair<AbsBehaviorTree, std::unordered_map<int, int>>
 BuildTreeFromFlatbuffers(const Serialization::BehaviorTree *fb_behavior_tree)
 {

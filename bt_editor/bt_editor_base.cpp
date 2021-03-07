@@ -206,10 +206,10 @@ const NodeModels &BuiltinNodeModels()
             NodeModel groot_model;
             groot_model = bt_model;
 
-            // set default type_name for all Ports to "string"
+            // set default type_name for all Ports to "float"
             for (auto& port: groot_model.ports)
             {
-                port.second.type_name = "string";
+                port.second.type_name = "float";
             }
 
             out.insert( { QString::fromStdString(model_name), std::move(groot_model) });

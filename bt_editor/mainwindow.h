@@ -82,6 +82,8 @@ public slots:
 
     void onAddToModelRegistry(const NodeModel& model);
 
+    void onInitializeDataTypes(const DataTypes& data_types);
+
     void onDestroySubTree(const QString &ID);
 
     void onModelRemoveRequested(QString ID);

@@ -180,6 +180,9 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
     connect( _replay_widget, &SidepanelReplay::addNewModel,
             this, &MainWindow::onAddToModelRegistry);
 
+    connect( _replay_widget, &SidepanelReplay::initializeDataTypes,
+            this, &MainWindow::onInitializeDataTypes);
+
     connect( ui->toolButtonSaveFile, &QToolButton::clicked,
             this, &MainWindow::on_actionSave_triggered );
 
@@ -955,6 +958,11 @@ void MainWindow::onAddToModelRegistry(const NodeModel &model)
     _editor_widget->updateTreeView();
 }
 
+void MainWindow::onInitializeDataTypes(const DataTypes& data_types)
+{
+    _datatypes = data_types;
+}
+
 void MainWindow::onDestroySubTree(const QString &ID)
 {
     auto sub_container = getTabByName(ID);
@@ -1725,7 +1733,7 @@ void MainWindow::on_actionCustomDataTypes_triggered()
 
     if( dialog.exec() == QDialog::Accepted)
     {
-        _datatypes = dialog.getDataTypes();
+        onInitializeDataTypes( dialog.getDataTypes() );
     }
 }
 

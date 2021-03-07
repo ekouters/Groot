@@ -30,7 +30,7 @@ CustomNodeDialog::CustomNodeDialog(const NodeModels &models,
     restoreGeometry(settings.value("CustomNodeDialog/geometry").toByteArray());
     ui->tableWidget->horizontalHeader()->restoreState( settings.value("CustomNodeDialog/header").toByteArray() );
 
-    QRegExp rx("\\w+");
+    QRegExp rx("[\\w]+");
     _validator = new QRegExpValidator(rx, this);
 
     if( to_edit.isEmpty() == false)
@@ -63,7 +63,7 @@ CustomNodeDialog::CustomNodeDialog(const NodeModels &models,
 
                 // Populate DataTypes column
                 QComboBox* combo_datatype = new QComboBox;
-                combo_datatype->addItem("string");
+                combo_datatype->addItem("float");
                 for (const auto &datatype_it: _datatypes)
                 {
                     combo_datatype->addItem(datatype_it.first);
@@ -300,7 +300,7 @@ void CustomNodeDialog::on_pushButtonAdd_pressed()
 
     // Populate DataTypes column
     QComboBox *combo_datatype = new QComboBox;
-    combo_datatype->addItem("string");
+    combo_datatype->addItem("float");
     for (const auto &datatype_it : _datatypes)
     {
         combo_datatype->addItem(datatype_it.first);
@@ -345,7 +345,7 @@ void CustomNodeDialog::on_comboBox_currentIndexChanged(const QString &node_type)
             auto direction_item = new QTableWidgetItem ("Input");
             direction_item->setFlags(direction_item->flags() & ~Qt::ItemIsEditable );
 
-            auto datatype_item = new QTableWidgetItem ("string");
+            auto datatype_item = new QTableWidgetItem ("float");
             datatype_item->setFlags(datatype_item->flags() & ~Qt::ItemIsEditable );
 
             auto value_item = new QTableWidgetItem ("false");
@@ -379,9 +379,9 @@ void CustomNodeDialog::dataTypeTextChanged(const QString &new_datatype)
         int row = comboBox->itemData(0, Qt::UserRole + 1).toInt();
         int col = comboBox->itemData(0, Qt::UserRole + 2).toInt();
 
-        if (new_datatype == "string")
+        if (new_datatype == "float")
         {
-            // Switch back to string
+            // Switch back to float
             ui->tableWidget->removeCellWidget(row, (col+1));
             ui->tableWidget->setItem(row, (col+1), new QTableWidgetItem());
         }

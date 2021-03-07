@@ -119,7 +119,7 @@ BehaviorTreeDataModel::BehaviorTreeDataModel(const NodeModel &model, const DataT
             }
 
             QWidget* form_field;
-            if (port_it.second.type_name == "string")
+            if (port_it.second.type_name == "float")
             {
                 form_field = new GrootLineEdit();
                 GrootLineEdit *form_field_lineedit = dynamic_cast<GrootLineEdit *>(form_field);
@@ -143,9 +143,12 @@ BehaviorTreeDataModel::BehaviorTreeDataModel(const NodeModel &model, const DataT
                 form_field_combo->view()->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
                 form_field_combo->setMaxVisibleItems(10);
 
-                for (const auto &datatype_value_it : _datatypes.at(port_it.second.type_name))
+                if (_datatypes.find(port_it.second.type_name) != _datatypes.end())
                 {
-                    form_field_combo->addItem(datatype_value_it);
+                    for (const auto &datatype_value_it : _datatypes.at(port_it.second.type_name))
+                    {
+                        form_field_combo->addItem(datatype_value_it);
+                    }
                 }
                 
                 form_field_combo->setCurrentText(port_it.second.default_value);

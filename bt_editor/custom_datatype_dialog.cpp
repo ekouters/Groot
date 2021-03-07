@@ -128,7 +128,7 @@ void CustomDataTypeDialog::checkValid()
     int pos = 0;
 
     // Regexp for a valid datatype name
-    QRegExp rx("\\w+");
+    QRegExp rx("[\\w:]+");
     QValidator* validator = new QRegExpValidator(rx, this);
 
     // Do checks, set warning text and valid to FALSE if NOK

@@ -19,6 +19,8 @@ std::vector<QtNodes::Node *> getChildren(const QtNodes::FlowScene &scene,
 AbsBehaviorTree BuildTreeFromScene(const QtNodes::FlowScene *scene,
                                    QtNodes::Node *root_node = nullptr);
 
+DataTypes BuildDataTypesFromFlatbuffers(const Serialization::BehaviorTree *fb_behavior_tree);
+
 std::pair<AbsBehaviorTree, std::unordered_map<int, int> >
 BuildTreeFromFlatbuffers(const Serialization::BehaviorTree* bt );
 
