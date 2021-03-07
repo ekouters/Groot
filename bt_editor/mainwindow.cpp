@@ -194,6 +194,9 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
     connect( _monitor_widget, &SidepanelMonitor::addNewModel,
             this, &MainWindow::onAddToModelRegistry);
 
+    connect( _monitor_widget, &SidepanelMonitor::initializeDataTypes,
+            this, &MainWindow::onInitializeDataTypes);
+
     connect( _monitor_widget, &SidepanelMonitor::changeNodeStyle,
             this, &MainWindow::onChangeNodesStatus);
 

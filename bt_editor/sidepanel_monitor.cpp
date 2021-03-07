@@ -135,6 +135,10 @@ bool SidepanelMonitor::getTreeFromServer()
         const char* buffer = reinterpret_cast<const char*>(reply.data());
         auto fb_behavior_tree = Serialization::GetBehaviorTree( buffer );
 
+        // populate datatypes from data contained in the flatbuffers
+        auto datatypes = BuildDataTypesFromFlatbuffers( fb_behavior_tree );
+        initializeDataTypes( datatypes );
+
         auto res_pair = BuildTreeFromFlatbuffers( fb_behavior_tree );
 
         _loaded_tree  = std::move( res_pair.first );
